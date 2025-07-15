@@ -1,53 +1,56 @@
-import pandas as pd
-from fastapi import APIRouter, HTTPException
-from api.schemas import BiopsyInput, RecommendationInput
-from .model_loader import load_biopsy_model, load_recommendation_model
+from fastapi import APIRouter
+from api.model_loader import biopsy_model, recommendation_model
+from api.schemas import BiopsyRiskInput, ScreeningRecommendationInput
+from fastapi.responses import JSONResponse
 
 router = APIRouter()
 
-# === Biopsy Risk Prediction ===
-@router.post("/predict-biopsy")
-def predict_biopsy_endpoint(input_data: BiopsyInput):
+@router.post("/predict-full-assessment")
+def predict_full_assessment(
+        biopsy_data: BiopsyRiskInput,
+        recommendation_data: ScreeningRecommendationInput
+):
     try:
-        model, expected_features = load_biopsy_model()
+        # Check for UNKNOWN test results and return rule-based response
+        if recommendation_data.HPV_Test_Result.upper() == "UNKNOWN" or recommendation_data.Pap_Smear_Result.upper() == "UNKNOWN":
+            return {
+                "biopsy_risk": {
+                    "prediction": None,
+                    "confidence": None
+                },
+                "screening_recommendation": "RECOMMEND PAP SMEAR AND HPV TESTING"
+            }
 
-        # Convert input to DataFrame using alias keys (matches model training column names)
-        df = pd.DataFrame([input_data.model_dump(by_alias=True)])
+        biopsy_input_df = biopsy_data.to_dataframe()
+        biopsy_prediction = biopsy_model.predict(biopsy_input_df)[0]
+        biopsy_prob = biopsy_model.predict_proba(biopsy_input_df)[0].max()
 
-        # Fill any missing expected columns with None
-        for col in expected_features:
-            if col not in df.columns:
-                df[col] = None
-
-        # Reorder columns to match model input
-        df = df[expected_features]
-
-        # Predict
-        prediction = model.predict(df)[0]
-        probability = model.predict_proba(df)[0][1]
+        recommendation_input_df = recommendation_data.to_dataframe()
+        recommendation_prediction = recommendation_model.predict(recommendation_input_df)[0]
 
         return {
-            "probability_percent": round(probability * 100, 2)
+            "biopsy_risk": {
+                "prediction": int(biopsy_prediction),
+                "confidence": round(biopsy_prob, 4)
+            },
+            "screening_recommendation": recommendation_prediction
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
-@router.post("/predict-recommendation")
-def predict_recommendation_endpoint(input_data: RecommendationInput):
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+@router.post("/predict-recommendation-only")
+def predict_recommendation_only(data: ScreeningRecommendationInput):
     try:
-        model, features, encoder = load_recommendation_model()
-        df = pd.DataFrame([input_data.dict()])
+        # Check for UNKNOWN test results and return rule-based response
+        if data.HPV_Test_Result.upper() == "UNKNOWN" or data.Pap_Smear_Result.upper() == "UNKNOWN":
+            return {
+                "screening_recommendation": "RECOMMEND PAP SMEAR AND HPV TESTING"
+            }
 
-        missing = [col for col in features if col not in df.columns]
-        if missing:
-            raise HTTPException(status_code=400, detail=f"Missing required fields: {missing}")
-
-        pred_encoded = model.predict(df[features])[0]
-        prediction = encoder.inverse_transform([pred_encoded])[0]
-
-        return {
-            "recommended_action": prediction,
-        }
+        input_df = data.to_dataframe()
+        prediction = recommendation_model.predict(input_df)[0]
+        return {"screening_recommendation": prediction}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return JSONResponse(status_code=500, content={"error": str(e)})

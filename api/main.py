@@ -1,16 +1,26 @@
 # api/main.py
-
 from fastapi import FastAPI
-from api.prediction import router  # ✅ Import the router
+from fastapi.middleware.cors import CORSMiddleware
+from api import prediction
 
 app = FastAPI(
-    title="CerviCare ML API",
-    version="1.0"
+    title="CerviCare Risk Assessment API",
+    description="Provides endpoints for biopsy risk prediction and cervical cancer screening recommendations.",
+    version="1.0.0"
 )
+
+# Allow all origins (update for production as needed)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include prediction routes
+app.include_router(prediction.router)
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to CerviCare ML API 🚀"}
-
-# Mount router at /api, so routes are like /api/predict-biopsy
-app.include_router(router, prefix="/api")
+    return {"message": "CerviCare Risk Assessment API is running"}
