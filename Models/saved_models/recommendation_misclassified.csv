@@ -1,0 +1,7 @@
+Age,Sexual_Partners,First_Sexual_Activity_Age,HPV_Test_Result,Pap_Smear_Result,Smoking_Status,STDs_History,Region,Insurance_Covered,Screening_Type_Last,True_Label,Predicted_Label
+36,2,17,NEGATIVE,N,N,Y,Kericho ,N,VIA,OTHER,FOLLOW_UP
+44,3,26,NEGATIVE,N,N,Y,Loitoktok,N,VIA,REPEAT,OTHER
+39,5,23,NEGATIVE,N,Y,Y,Kakamega,N,VIA,FOLLOW_UP,REPEAT
+43,3,15,NEGATIVE,N,N,Y,Pumwani ,N,VIA,REPEAT,FOLLOW_UP
+40,2,21,NEGATIVE,N,Y,Y,Moi ,Y,VIA,OTHER,FOLLOW_UP
+46,3,21,POSITIVE,N,N,N,Mombasa,N,HPV DNA,VACCINE,FOLLOW_UP
