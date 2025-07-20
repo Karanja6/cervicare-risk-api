@@ -8,6 +8,7 @@ imbalanced-learn
 
 # Explainability
 shap
+
 # Visualization
 matplotlib
 seaborn
@@ -15,7 +16,5 @@ seaborn
 # API
 fastapi
 uvicorn
-# Optional (for file uploads / better logging)
 python-multipart
 gunicorn
-
