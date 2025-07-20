@@ -1,0 +1,76 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_assessment
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    ports:
+      - "${MYSQL_PORT}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  assessment-microservice:
+    build:
+      context: ./cervicare-backend/DataSaverMicroservice
+    container_name: assessment_microservice
+    depends_on:
+      - mysql
+    ports:
+      - "${ASSESSMENT_PORT}:5000"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE}?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+
+  appointment:
+    build:
+      context: ./cervicare-backend/appointment
+    container_name: appointment_service
+    depends_on:
+      - mysql
+    ports:
+      - "${APPOINTMENT_PORT}:8080"
+
+  cervicare_user_service:
+    build:
+      context: ./cervicare-backend/Cervicare_user_service
+    container_name: user_service
+    depends_on:
+      - mysql
+    ports:
+      - "${USER_SERVICE_PORT}:8081"
+
+  cervicare-risk-api:
+    build:
+      context: ./cervicare-backend/cervicare-risk-api
+    container_name: risk_api_service
+    depends_on:
+      - mysql
+    ports:
+      - "${RISK_API_PORT}:8000"
+
+  hospital-recommender-service:
+    build:
+      context: ./cervicare-backend/hospital-recommender-service
+    container_name: hospital_recommender_service
+    depends_on:
+      - mysql
+    ports:
+      - "${RECOMMENDER_PORT}:8083"
+
+  cervicare-frontend:
+    build:
+      context: ./frontend
+    container_name: cervicare_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - cervicare_user_service
+      - assessment-microservice
+      - cervicare-risk-api
+      - appointment
+      - hospital-recommender-service
+
+volumes:
+  mysql_data:
